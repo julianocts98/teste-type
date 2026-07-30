@@ -1,0 +1,1 @@
+"""Galactic Conflict API package."""

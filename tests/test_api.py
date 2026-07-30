@@ -12,6 +12,7 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
 import main
+from galaxy import database
 
 
 @pytest.fixture
@@ -23,13 +24,13 @@ def client(monkeypatch: pytest.MonkeyPatch):
         poolclass=StaticPool,
     )
     test_session_factory = sessionmaker(bind=test_engine, autoflush=False, autocommit=False)
-    monkeypatch.setattr(main, "engine", test_engine)
-    monkeypatch.setattr(main, "SessionLocal", test_session_factory)
+    monkeypatch.setattr(database, "engine", test_engine)
+    monkeypatch.setattr(database, "SessionLocal", test_session_factory)
 
     with TestClient(main.app, raise_server_exceptions=False) as test_client:
         yield test_client
 
-    main.Base.metadata.drop_all(test_engine)
+    database.Base.metadata.drop_all(test_engine)
     test_engine.dispose()
 
 
@@ -60,6 +61,28 @@ def test_character_creation_and_lookup_work(client: TestClient):
     assert fetched.json()["name"] == "Chewbacca"
 
 
+def test_seeded_starships_can_be_listed(client: TestClient):
+    response = client.get("/starships")
+
+    assert response.status_code == 200
+    assert {ship["name"] for ship in response.json()} >= {"Millennium Falcon", "X-wing"}
+
+
+def test_starting_an_initialized_database_does_not_duplicate_seeds(client: TestClient):
+    initial_starships = client.get("/starships").json()
+
+    main.startup()
+
+    assert client.get("/starships").json() == initial_starships
+
+
+def test_known_bug_starship_fuel_accepts_out_of_range_level(client: TestClient):
+    response = client.patch("/starships/1/fuel", params={"level": 101})
+
+    assert response.status_code == 200
+    assert response.json()["fuel_level"] == 101
+
+
 def test_known_bug_character_offset_is_ignored(client: TestClient):
     first_page = client.get("/characters", params={"limit": 2, "offset": 0})
     alleged_second_page = client.get("/characters", params={"limit": 2, "offset": 1})
@@ -87,7 +110,7 @@ def test_known_bug_character_patch_accepts_undocumented_side(client: TestClient)
 
 
 def test_known_bug_duplicate_planet_is_a_server_error(client: TestClient):
-    payload = {"name": "Naboo", "terrain": "swamp", "population": 4_500_000_000}
+    payload = {"name": "Kamino", "terrain": "ocean", "population": 1_000_000}
 
     assert client.post("/planets", json=payload).status_code == 201
     duplicate = client.post("/planets", json=payload)
