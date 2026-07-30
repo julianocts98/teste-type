@@ -42,5 +42,3 @@ The integration suite uses an isolated in-memory SQLite database for each test. 
 - `PATCH /missions/{id}/status`
 - `GET`, `POST`, and `GET /{id}` for `/starships`
 - `PATCH /starships/{id}/fuel?level=N`
-
-See [INTENTIONAL_BUGS.md](INTENTIONAL_BUGS.md) after testing for the answer key.
