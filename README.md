@@ -31,7 +31,7 @@ The API recreates the SQLite schema and loads the seed records only on that firs
 uv run pytest
 ```
 
-The integration suite uses an isolated in-memory SQLite database for each test. It verifies normal API paths and makes the intentional defects explicit as `known_bug` tests.
+The integration suite uses an isolated in-memory SQLite database for each test. Healthy-path tests pass; defect tests assert the intended API contract and deliberately fail until the corresponding bug is fixed. This red state is expected for the QA exercise.
 
 ## Useful endpoints
 

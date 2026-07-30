@@ -25,6 +25,7 @@ def list_characters(
         query = query.where(Character.force_sensitive == force_sensitive)
     # Intentional: offset is accepted but not applied.
     characters = db.scalars(query.limit(limit)).all()
+    # Intentional: count describes only this page rather than all matching records.
     return {"items": [CharacterResponse.model_validate(character).model_dump() for character in characters], "count": len(characters)}
 
 

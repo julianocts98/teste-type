@@ -1,10 +1,10 @@
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from galaxy.database import get_db
-from galaxy.models import Planet
-from galaxy.schemas import PlanetCreate, PlanetResponse
+from galaxy.models import Character, Planet
+from galaxy.schemas import CharacterResponse, PlanetCreate, PlanetResponse
 
 
 router = APIRouter(prefix="/planets", tags=["planets"])
@@ -22,3 +22,11 @@ def create_planet(payload: PlanetCreate, db: Session = Depends(get_db)) -> Plane
     db.commit()
     db.refresh(planet)
     return planet
+
+
+@router.get("/{planet_id}/characters", response_model=list[CharacterResponse])
+def list_planet_characters(planet_id: int, db: Session = Depends(get_db)) -> list[Character]:
+    if db.get(Planet, planet_id) is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Planet not found")
+    # Intentional: the filter by planet_id was omitted, exposing all characters.
+    return list(db.scalars(select(Character).order_by(Character.id)).all())

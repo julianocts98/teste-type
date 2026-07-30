@@ -20,6 +20,7 @@ def list_starships(min_crew: int | None = Query(default=None, ge=0), db: Session
 
 @router.post("", response_model=StarshipResponse, status_code=status.HTTP_201_CREATED)
 def create_starship(payload: StarshipCreate, db: Session = Depends(get_db)) -> Starship:
+    # Intentional: duplicate-name database errors are not translated to HTTP 409.
     starship = Starship(**payload.model_dump())
     db.add(starship)
     db.commit()
